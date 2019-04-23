@@ -1,4 +1,5 @@
-void getLoudness()
+//================================================================================
+float getLoudness()
 {
   // read a bunch of samples:
   int samples[SAMPLES];
@@ -42,4 +43,4 @@ void getLoudness()
   }
   return maxsample - minsample;
 }
-
+//================================================================================

@@ -18,8 +18,8 @@ int count = 0;
 int pre;
 const int presNum = 500;
 int pres[presNum];
-int rawVal = 0;
 int avgVal = 500;
+float rawVal = 0;
 unsigned long t0 = 0;
 unsigned long t1 = 0;
 int p200 = 0;
@@ -61,11 +61,11 @@ void setup()
 
 void loop()
 {
+  //---------------------------------------------------------------
   rawVal = getLoudness();
-
   pres[count] = rawVal;
-  count += 1;
-
+  count++;
+  //---------------------------------------------------------------
   if (count >= (presNum - 1) )
   {
     for (int i = 0; i < (presNum - 1); i++)
@@ -90,7 +90,7 @@ void loop()
     {
       if ((millis() - t0) < 5000)
       {
-        avgVal = (pre <= 20) ? rawVal : 500      
+        avgVal = ((pre <= 20) ? rawVal : 500);
       }
       else
       {
@@ -99,7 +99,7 @@ void loop()
     }
     else // rawVal > threshold, t1>t0
     {
-      avgVal = (pre <= 20) ? 0 : rawVal      
+      avgVal = ((pre <= 20) ? 0 : rawVal);
     }
 
     count = presNum - 1;
@@ -107,13 +107,8 @@ void loop()
     p200 = 0;
   }
   //---------------------------------------------------------------
-  Serial.print(rawVal);
-  Serial.print(" ");
-  Serial.print(avgVal);
-  Serial.print(" ");
-  Serial.println(threshold);
+  printValues();
   //---------------------------------------------------------------
-
   if (avgVal >= threshold)
   {
     digitalWrite(ledPin1, LOW);
@@ -134,43 +129,8 @@ void loop()
       myStepper->setSpeed(10);
       runFlag = 1;
     }
-    if (pos == steps)
-    {
-      myStepper->release();
-      pos = 0;
-      steps = random (1, (stepperRange - 1));
-      if (des == 0)
-      {
-        dir = 1;
-      }
-      else if (des == stepperRange)
-      {
-        dir = 2;
-      }
-      else
-      {
-        dir = (dir == 1 ? 2 : 1);
-      }
-      if (dir == 1)
-      {
-        des = des + steps;
-      }
-      if (dir == 2)
-      {
-        des = des - steps;
-      }
-      if (des < 0)
-      {
-        steps = steps + des;
-        des = 0;
-      }
-      if (des > stepperRange)
-      {
-        steps = stepperRange - (des - steps);
-        des = stepperRange;
-      }
-    }
+    checkSteps();
     myStepper->onestep(dir, MICROSTEP);
-    pos++;    
+    pos++;
   }
 }
