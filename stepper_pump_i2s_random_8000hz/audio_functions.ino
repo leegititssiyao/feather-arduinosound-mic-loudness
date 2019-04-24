@@ -47,33 +47,42 @@ float getLoudness()
 
 void calculateAvgStateValue()
 {
-  for (int i = 0; i < (numberOfPreviousStates - 1); i++)
+  for (int i = 0; i < numberOfPreviousStates; ++i)
   {
-    if (previousStateBuffer[i] >= threshold)
-    {
-      statesAboveThreshold += 1;
-    }
-  }
+    avgStateValue += previousStateBuffer[i];   
+  }  
+  avgStateValue /= float(numberOfPreviousStates);
+}
+
+void analyseAudioData()
+{
 
   if ((previousStateBuffer[currentStateIndex - 4] > threshold) && (rawVal < threshold))
   {
-    timeThresholdCrossed = millis();
+    timeThresholdFalling = millis();
   }
 
-  if (rawVal < threshold) // timeThresholdCrossed>t1
+  if ((previousStateBuffer[currentStateIndex - 4] < threshold) && (rawVal > threshold))
   {
-    if ((millis() - timeThresholdCrossed) < timeThreshold)
-    {
-      avgStateValue = ((statesAboveThreshold <= 20) ? rawVal : 500);
-    }
-    else
-    {
-      avgStateValue = rawVal;
-    }
+    timeThresholdRising = millis();
   }
-  else // rawVal > threshold, t1>timeThresholdCrossed
+  else if ((rawVal > threshold))
   {
-    avgStateValue = ((statesAboveThreshold <= 20) ? 0 : rawVal);
+    // do nothing
+  }
+  else if ((rawVal < threshold))
+  {
+    timeThresholdRising = millis();
+  }
+
+
+  if (rawVal < threshold && (millis() - timeThresholdFalling) > timeRunThreshold) // timeThresholdRising>t1
+  {
+    runMotors = true;
+  }
+  else if (rawVal > threshold && (millis() - timeThresholdRising) > timeStopThreshold)
+  {
+    runMotors = false;
   }
 
   statesAboveThreshold = 0;

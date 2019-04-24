@@ -16,13 +16,18 @@ const int ledPin = 13;
 bool runFlag = 0;
 unsigned int currentStateIndex = 0; // index current state
 int statesAboveThreshold;
-const int numberOfPreviousStates = 500; // number of previous states to record
+const int numberOfPreviousStates = 20; // number of previous states to record
 int previousStateBuffer[numberOfPreviousStates] = {0}; // previous state buffer (or array)
-int avgStateValue = 500;  // avearge state value
+float avgStateValue = 0;  // avearge state value
+float previousAvgStateValue = 0;  // avearge state value
 float rawVal = 0;  // current input value
-unsigned long timeThresholdCrossed = 0;
-unsigned long timeThreshold = 5000; // time required to be above threshold before activating
-int threshold = 300;
+unsigned long timeThresholdRising = 0;
+unsigned long timeThresholdFalling = 0;
+unsigned long timeRunThreshold = 3000; // time required to be above threshold before activating
+unsigned long timeStopThreshold = 1000; // time required to be above threshold before activating
+int threshold = 400;
+bool runMotors = false;
+bool debug = true;
 //================================================================================
 // Stepper Variables
 int stepperRange = 700;
@@ -60,16 +65,19 @@ void setup()
 void loop()
 {
   //---------------------------------------------------------------
+  previousAvgStateValue = avgStateValue; 
+  avgStateValue = 0;
   rawVal = getLoudness();
   previousStateBuffer[currentStateIndex] = rawVal;
   currentStateIndex++;
   currentStateIndex %= numberOfPreviousStates;
-  //---------------------------------------------------------------  
+  //---------------------------------------------------------------
   calculateAvgStateValue();
+  analyseAudioData();
   //---------------------------------------------------------------
   printValues();
   //---------------------------------------------------------------
-  if (avgStateValue >= threshold)
+  if (!runMotors)
   {
     digitalWrite(ledPin, LOW);
     if (runFlag == 1)
