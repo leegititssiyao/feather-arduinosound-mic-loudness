@@ -24,8 +24,7 @@ float getLoudness()
   }
   meanval /= SAMPLES;
 
-  // subtract it from all sapmles to get a 'normalized' output
-  for (int i = 0; i < SAMPLES; i++)
+  for (int i = 0; i < SAMPLES; i++) // subtract it from all sapmles to get a 'normalized' output
   {
     samples[i] -= meanval;
   }

@@ -12,18 +12,17 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_StepperMotor *myStepper = AFMStop.getStepper(200, 2);
 Adafruit_DCMotor *myPump = AFMSbot.getMotor(1);
 //================================================================================
-const int ledPin1 = 13;
+const int ledPin = 13;
 bool runFlag = 0;
-int count = 0;
-int pre;
-const int presNum = 500;
-int pres[presNum];
-int avgVal = 500;
-float rawVal = 0;
-unsigned long t0 = 0;
-unsigned long t1 = 0;
-int p200 = 0;
-int threshold = 200;
+int currentStateIndex = 0; // index current state
+int statesAboveThreshold;
+const int numberOfPreviousStates = 500; // number of previous states to record
+int previousStateBuffer[numberOfPreviousStates]; // previous state buffer (or array)
+int avgStateValue = 500;  // avearge state value
+float rawVal = 0;  // current input value
+unsigned long timeThresholdCrossed = 0;
+unsigned long timeThreshold = 5000; // time required to be above threshold before activating
+int threshold = 300;
 int stepperRange = 700;
 uint8_t dir = 1;
 int des = 0;
@@ -37,12 +36,11 @@ void setup()
   AFMSbot.begin(10);
   AFMStop.begin();
 
-  pinMode(ledPin1, OUTPUT);
+  pinMode(ledPin, OUTPUT);
 
   while (!Serial) {}
 
-  // start I2S at 16 kHz with 32-bits per sample
-  if (!I2S.begin(I2S_PHILIPS_MODE, 8000, 32))
+  if (!I2S.begin(I2S_PHILIPS_MODE, 8000, 32))   // start I2S at 8 kHz with 32-bits per sample
   {
     Serial.println("Failed to initialize I2S!");
     while (1); // do nothing
@@ -50,8 +48,6 @@ void setup()
 
   myPump->setSpeed(10);
   myPump->run(RELEASE);
-  //  myPump->run(FORWARD);
-  //  myPump->run(RELEASE);
   myStepper->setSpeed(10);
   myStepper->release();
   Serial.println("Start!");
@@ -63,55 +59,51 @@ void loop()
 {
   //---------------------------------------------------------------
   rawVal = getLoudness();
-  pres[count] = rawVal;
-  count++;
+  previousStateBuffer[currentStateIndex] = rawVal;
+  currentStateIndex++;
   //---------------------------------------------------------------
-  if (count >= (presNum - 1) )
+  // Calculate avergae state value
+  if (currentStateIndex >= (numberOfPreviousStates - 1) )
   {
-    for (int i = 0; i < (presNum - 1); i++)
+    for (int i = 0; i < (numberOfPreviousStates - 1); i++)
     {
-      if (pres[i] >= threshold)
+      if (previousStateBuffer[i] >= threshold)
       {
-        pre += 1;
-        if (pres[i] == threshold) //was previously pres[i] = threshold
-        {
-          p200 += 1;
-        }
+        statesAboveThreshold += 1;
       }
-      pres[i] = pres[i + 1];
+      previousStateBuffer[i] = previousStateBuffer[i + 1];
     }
 
-    if ((pres[presNum - 4] > threshold) && (rawVal < threshold))
+    if ((previousStateBuffer[numberOfPreviousStates - 4] > threshold) && (rawVal < threshold))
     {
-      t0 = millis();
+      timeThresholdCrossed = millis();
     }
 
-    if (rawVal < threshold) // t0>t1
+    if (rawVal < threshold) // timeThresholdCrossed>t1
     {
-      if ((millis() - t0) < 5000)
+      if ((millis() - timeThresholdCrossed) < timeThreshold)
       {
-        avgVal = ((pre <= 20) ? rawVal : 500);
+        avgStateValue = ((statesAboveThreshold <= 20) ? rawVal : 500);
       }
       else
       {
-        avgVal = rawVal;
+        avgStateValue = rawVal;
       }
     }
-    else // rawVal > threshold, t1>t0
+    else // rawVal > threshold, t1>timeThresholdCrossed
     {
-      avgVal = ((pre <= 20) ? 0 : rawVal);
+      avgStateValue = ((statesAboveThreshold <= 20) ? 0 : rawVal);
     }
 
-    count = presNum - 1;
-    pre = 0;
-    p200 = 0;
+    currentStateIndex = numberOfPreviousStates - 1;
+    statesAboveThreshold = 0;
   }
   //---------------------------------------------------------------
   printValues();
   //---------------------------------------------------------------
-  if (avgVal >= threshold)
+  if (avgStateValue >= threshold)
   {
-    digitalWrite(ledPin1, LOW);
+    digitalWrite(ledPin, LOW);
     if (runFlag == 1)
     {
       myPump->run(RELEASE);
@@ -121,7 +113,7 @@ void loop()
   }
   else
   {
-    digitalWrite(ledPin1, HIGH);
+    digitalWrite(ledPin, HIGH);
     if (runFlag == 0)
     {
       myPump->setSpeed(200);
