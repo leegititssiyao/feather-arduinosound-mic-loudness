@@ -42,4 +42,39 @@ float getLoudness()
   }
   return maxsample - minsample;
 }
+
 //================================================================================
+
+void calculateAvgStateValue()
+{
+  for (int i = 0; i < (numberOfPreviousStates - 1); i++)
+  {
+    if (previousStateBuffer[i] >= threshold)
+    {
+      statesAboveThreshold += 1;
+    }
+  }
+
+  if ((previousStateBuffer[currentStateIndex - 4] > threshold) && (rawVal < threshold))
+  {
+    timeThresholdCrossed = millis();
+  }
+
+  if (rawVal < threshold) // timeThresholdCrossed>t1
+  {
+    if ((millis() - timeThresholdCrossed) < timeThreshold)
+    {
+      avgStateValue = ((statesAboveThreshold <= 20) ? rawVal : 500);
+    }
+    else
+    {
+      avgStateValue = rawVal;
+    }
+  }
+  else // rawVal > threshold, t1>timeThresholdCrossed
+  {
+    avgStateValue = ((statesAboveThreshold <= 20) ? 0 : rawVal);
+  }
+
+  statesAboveThreshold = 0;
+}

@@ -15,7 +15,7 @@ void setDirection()
   }
   else
   {
-    dir = (dir == FORWARD ? BACKWARD : FORWARD);
+    switchDirection();
   }
 }
 //================================================================================
@@ -32,18 +32,7 @@ void checkSteps()
     pos = 0;
     steps = random (1, (stepperRange - 1));
     //---------------------------------------------------------------------------
-    if (des == 0)
-    {
-      dir = FORWARD;
-    }
-    else if (des == stepperRange)
-    {
-      dir = BACKWARD;
-    }
-    else
-    {
-      dir = (dir == FORWARD ? BACKWARD : FORWARD);
-    }
+    setDirection();
     //---------------------------------------------------------------------------
     switch (dir)
     {
@@ -69,3 +58,8 @@ void checkSteps()
   }
 }
 //================================================================================
+
+void switchDirection()
+{
+  dir = (dir == FORWARD ? BACKWARD : FORWARD);
+}

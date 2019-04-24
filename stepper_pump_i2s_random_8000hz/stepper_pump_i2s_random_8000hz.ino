@@ -14,15 +14,17 @@ Adafruit_DCMotor *myPump = AFMSbot.getMotor(1);
 //================================================================================
 const int ledPin = 13;
 bool runFlag = 0;
-int currentStateIndex = 0; // index current state
+unsigned int currentStateIndex = 0; // index current state
 int statesAboveThreshold;
 const int numberOfPreviousStates = 500; // number of previous states to record
-int previousStateBuffer[numberOfPreviousStates]; // previous state buffer (or array)
+int previousStateBuffer[numberOfPreviousStates] = {0}; // previous state buffer (or array)
 int avgStateValue = 500;  // avearge state value
 float rawVal = 0;  // current input value
 unsigned long timeThresholdCrossed = 0;
 unsigned long timeThreshold = 5000; // time required to be above threshold before activating
 int threshold = 300;
+//================================================================================
+// Stepper Variables
 int stepperRange = 700;
 uint8_t dir = 1;
 int des = 0;
@@ -61,43 +63,9 @@ void loop()
   rawVal = getLoudness();
   previousStateBuffer[currentStateIndex] = rawVal;
   currentStateIndex++;
-  //---------------------------------------------------------------
-  // Calculate avergae state value
-  if (currentStateIndex >= (numberOfPreviousStates - 1) )
-  {
-    for (int i = 0; i < (numberOfPreviousStates - 1); i++)
-    {
-      if (previousStateBuffer[i] >= threshold)
-      {
-        statesAboveThreshold += 1;
-      }
-      previousStateBuffer[i] = previousStateBuffer[i + 1];
-    }
-
-    if ((previousStateBuffer[numberOfPreviousStates - 4] > threshold) && (rawVal < threshold))
-    {
-      timeThresholdCrossed = millis();
-    }
-
-    if (rawVal < threshold) // timeThresholdCrossed>t1
-    {
-      if ((millis() - timeThresholdCrossed) < timeThreshold)
-      {
-        avgStateValue = ((statesAboveThreshold <= 20) ? rawVal : 500);
-      }
-      else
-      {
-        avgStateValue = rawVal;
-      }
-    }
-    else // rawVal > threshold, t1>timeThresholdCrossed
-    {
-      avgStateValue = ((statesAboveThreshold <= 20) ? 0 : rawVal);
-    }
-
-    currentStateIndex = numberOfPreviousStates - 1;
-    statesAboveThreshold = 0;
-  }
+  currentStateIndex %= numberOfPreviousStates;
+  //---------------------------------------------------------------  
+  calculateAvgStateValue();
   //---------------------------------------------------------------
   printValues();
   //---------------------------------------------------------------
@@ -125,4 +93,5 @@ void loop()
     myStepper->onestep(dir, MICROSTEP);
     pos++;
   }
+  //---------------------------------------------------------------
 }
