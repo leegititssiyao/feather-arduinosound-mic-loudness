@@ -57,30 +57,30 @@ void calculateAvgStateValue()
 void analyseAudioData()
 {
 
-  if ((previousStateBuffer[currentStateIndex - 4] > threshold) && (rawVal < threshold))
+  if ((previousAvgStateValue > threshold) && (avgStateValue < threshold))
   {
     timeThresholdFalling = millis();
   }
 
-  if ((previousStateBuffer[currentStateIndex - 4] < threshold) && (rawVal > threshold))
+  if ((previousAvgStateValue < threshold) && (avgStateValue > threshold))
   {
     timeThresholdRising = millis();
   }
-  else if ((rawVal > threshold))
+  else if ((avgStateValue > threshold))
   {
     // do nothing
   }
-  else if ((rawVal < threshold))
+  else if ((avgStateValue < threshold))
   {
     timeThresholdRising = millis();
   }
 
 
-  if (rawVal < threshold && (millis() - timeThresholdFalling) > timeRunThreshold) // timeThresholdRising>t1
+  if (avgStateValue < threshold && (millis() - timeThresholdFalling) > timeRunThreshold) // timeThresholdRising>t1
   {
     runMotors = true;
   }
-  else if (rawVal > threshold && (millis() - timeThresholdRising) > timeStopThreshold)
+  else if (avgStateValue > threshold && (millis() - timeThresholdRising) > timeStopThreshold)
   {
     runMotors = false;
   }
