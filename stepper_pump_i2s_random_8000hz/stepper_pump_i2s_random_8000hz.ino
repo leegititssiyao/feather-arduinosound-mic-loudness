@@ -23,9 +23,13 @@ float previousAvgStateValue = 0;  // avearge state value
 float rawVal = 0;  // current input value
 unsigned long timeThresholdRising = 0;
 unsigned long timeThresholdFalling = 0;
-unsigned long timeRunThreshold = 3000; // time required to be above threshold before activating
-unsigned long timeStopThreshold = 1000; // time required to be above threshold before activating
-int threshold = 400;
+unsigned long timeRunThreshold = 5000; // time required to be above threshold before activating
+unsigned long timeStopThreshold = 500; // time required to be above threshold before activating
+int threshold = 800;
+int timeStopPumpThreshold = 500;
+int timeStartPumpThreshold = 1500;
+int flagPump = 0;
+unsigned long timeStateOfPumpChanges = 0;
 bool runMotors = false;
 bool debug = true;
 //================================================================================
@@ -45,7 +49,7 @@ void setup()
 
   pinMode(ledPin, OUTPUT);
 
-  while (!Serial) {}
+  //  while (!Serial) {}
 
   if (!I2S.begin(I2S_PHILIPS_MODE, 8000, 32))   // start I2S at 8 kHz with 32-bits per sample
   {
@@ -65,7 +69,7 @@ void setup()
 void loop()
 {
   //---------------------------------------------------------------
-  previousAvgStateValue = avgStateValue; 
+  previousAvgStateValue = avgStateValue;
   avgStateValue = 0;
   rawVal = getLoudness();
   previousStateBuffer[currentStateIndex] = rawVal;
@@ -84,22 +88,36 @@ void loop()
     {
       myPump->run(RELEASE);
       runFlag = 0;
+      flagPump = 0;
     }
     myStepper->release();
   }
   else
   {
     digitalWrite(ledPin, HIGH);
-    if (runFlag == 0)
-    {
+    if (flagPump == 0) {
       myPump->setSpeed(200);
       myPump->run(FORWARD);
-      myStepper->setSpeed(10);
+      timeStateOfPumpChanges = millis();
+      flagPump = 1;
+    }
+    if ((millis() - timeStateOfPumpChanges > timeStopPumpThreshold) && (flagPump == 1)) {
+      myPump->run(RELEASE);
+      flagPump = 2;
+    }
+    if (millis() - timeStateOfPumpChanges > timeStartPumpThreshold) {
+      flagPump = 0;
+    }
+    myStepper->setSpeed(10);
+    if (runFlag == 0)
+    {
       runFlag = 1;
     }
+
     checkSteps();
     myStepper->onestep(dir, MICROSTEP);
     pos++;
+
   }
   //---------------------------------------------------------------
 }
