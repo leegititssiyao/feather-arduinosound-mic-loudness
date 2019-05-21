@@ -49,6 +49,7 @@ void setup()
   AFMStop.begin();
 
   pinMode(ledPin, OUTPUT);
+  pinMode(resetPin, INPUT);
 
   //  while (!Serial) {}
 
