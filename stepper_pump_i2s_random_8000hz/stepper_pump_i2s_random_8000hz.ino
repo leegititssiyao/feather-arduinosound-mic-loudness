@@ -13,6 +13,7 @@ Adafruit_StepperMotor *myStepper = AFMStop.getStepper(200, 2);
 Adafruit_DCMotor *myPump = AFMSbot.getMotor(1);
 //================================================================================
 const int ledPin = 13;
+const int resetPin = 6;
 bool runFlag = 0;
 unsigned int currentStateIndex = 0; // index current state
 int statesAboveThreshold;
@@ -25,9 +26,9 @@ unsigned long timeThresholdRising = 0;
 unsigned long timeThresholdFalling = 0;
 unsigned long timeRunThreshold = 5000; // time required to be above threshold before activating
 unsigned long timeStopThreshold = 500; // time required to be above threshold before activating
-int threshold = 800;
+int threshold = 7000;
 int timeStopPumpThreshold = 500;
-int timeStartPumpThreshold = 1500;
+int timeStartPumpThreshold = 5000;
 int flagPump = 0;
 unsigned long timeStateOfPumpChanges = 0;
 bool runMotors = false;
@@ -61,6 +62,15 @@ void setup()
   myPump->run(RELEASE);
   myStepper->setSpeed(10);
   myStepper->release();
+
+  //Take arm to the starting point
+  int reading = digitalRead(resetPin);
+  while (reading == 0){
+    reading = digitalRead(resetPin);
+    myStepper->onestep(BACKWARD, MICROSTEP);
+  }
+  myStepper->release();
+  
   Serial.println("Start!");
 }
 
