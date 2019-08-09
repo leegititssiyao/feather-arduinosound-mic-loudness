@@ -10,6 +10,7 @@ float getLoudness()
     while ((sample == 0) || (sample == -1) )
     {
       sample = I2S.read();
+//      Serial.println(sample);
     }
     sample >>= 14;
     samples[i] = sample;

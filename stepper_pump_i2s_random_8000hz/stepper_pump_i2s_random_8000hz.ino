@@ -9,7 +9,7 @@
 Adafruit_MotorShield AFMStop(0x61);
 Adafruit_MotorShield AFMSbot(0x60);
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
-Adafruit_StepperMotor *myStepper = AFMStop.getStepper(200, 2);
+Adafruit_StepperMotor *myStepper = AFMStop.getStepper(200, 1);
 Adafruit_DCMotor *myPump = AFMSbot.getMotor(1);
 //================================================================================
 const int ledPin = 13;
@@ -24,18 +24,18 @@ float previousAvgStateValue = 0;  // avearge state value
 float rawVal = 0;  // current input value
 unsigned long timeThresholdRising = 0;
 unsigned long timeThresholdFalling = 0;
-unsigned long timeRunThreshold = 5000; // time required to be above threshold before activating
+unsigned long timeRunThreshold = 3000; // time required to be above threshold before activating, 7000
 unsigned long timeStopThreshold = 500; // time required to be above threshold before activating
-int threshold = 7000;
-int timeStopPumpThreshold = 500;
-int timeStartPumpThreshold = 5000;
+int threshold = 8100; //8100
+int timeStopPumpThreshold = 1000; //2300, 200-250
+int timeStartPumpThreshold = 3000; //3000
 int flagPump = 0;
 unsigned long timeStateOfPumpChanges = 0;
 bool runMotors = false;
 bool debug = true;
 //================================================================================
 // Stepper Variables
-int stepperRange = 700;
+int stepperRange = 270;
 uint8_t dir = 1;
 int des = 0;
 int pos = 0;
@@ -59,19 +59,27 @@ void setup()
     while (1); // do nothing
   }
 
-  myPump->setSpeed(10);
-  myPump->run(RELEASE);
+//  Serial.println("GOT HHERE 2");
+  myPump->setSpeed(255); //255
+  //  myPump->run(RELEASE);
   myStepper->setSpeed(10);
-  myStepper->release();
 
   //Take arm to the starting point
   int reading = digitalRead(resetPin);
-  while (reading == 0){
-    reading = digitalRead(resetPin);
-    myStepper->onestep(BACKWARD, MICROSTEP);
+  int start = millis();
+  while ((millis() - start) < 5000) {
+    while (reading == 0) {
+      reading = digitalRead(resetPin);
+      Serial.println(reading);
+      myStepper->onestep(BACKWARD, MICROSTEP);
+      myPump->run(FORWARD);
+    }
+    myStepper->onestep(FORWARD, MICROSTEP);
+    myStepper->release();
   }
-  myStepper->release();
-  
+  myPump->run(RELEASE);
+
+
   Serial.println("Start!");
 }
 
@@ -79,6 +87,7 @@ void setup()
 
 void loop()
 {
+
   //---------------------------------------------------------------
   previousAvgStateValue = avgStateValue;
   avgStateValue = 0;
@@ -107,7 +116,7 @@ void loop()
   {
     digitalWrite(ledPin, HIGH);
     if (flagPump == 0) {
-      myPump->setSpeed(200);
+      myPump->setSpeed(140); //145
       myPump->run(FORWARD);
       timeStateOfPumpChanges = millis();
       flagPump = 1;
@@ -119,12 +128,16 @@ void loop()
     if (millis() - timeStateOfPumpChanges > timeStartPumpThreshold) {
       flagPump = 0;
     }
-    myStepper->setSpeed(10);
+
+
     if (runFlag == 0)
     {
+
+      //      myPump->setSpeed(148);
+      //      myPump->run(FORWARD);
       runFlag = 1;
     }
-
+    myStepper->setSpeed(10);
     checkSteps();
     myStepper->onestep(dir, MICROSTEP);
     pos++;
